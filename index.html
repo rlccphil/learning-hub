@@ -3,7 +3,7 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#365233">
-  <title>RLCC MCG Course Tracker</title>
+  <title>Learning Hub</title>
 
   <style>
     :root {
@@ -588,6 +588,33 @@
       }
     }
 
+    /* Mobile header: logo on top, app name below */
+    @media (max-width: 700px) {
+      .topbar {
+        align-items: flex-start;
+      }
+
+      .brand {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .logo {
+        width: 200px;
+        max-width: 60vw;
+        height: 44px;
+      }
+
+      .title {
+        font-size: 22px;
+      }
+
+      .subtitle {
+        margin-top: 4px;
+      }
+    }
+
   </style>
 </head>
 
@@ -601,7 +628,7 @@
         alt="Real Life Christian Communities"
       >
       <div>
-        <div class="title">MCG Course Tracker</div>
+        <div class="title">Learning Hub</div>
         <div class="subtitle">
           Learner participation and completion dashboard
         </div>
