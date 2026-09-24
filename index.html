@@ -736,7 +736,7 @@
     };
 
     // Paste your Apps Script Web app URL (ends in /exec) here:
-    const API_URL = "PASTE_YOUR_APPS_SCRIPT_WEB_APP_URL_HERE";
+    const API_URL = "https://script.google.com/macros/s/AKfycbyBhA1Qz6Vpjq_fo5WrhXGUO3KpQYAxfdC090isdtPvf1R2OgV5lwDylncEheVTOscd6Q/exec";
 
     function getKey() {
       try { return localStorage.getItem("mcgKey") || ""; }
@@ -782,7 +782,9 @@
           } catch (err) {
             throw new Error(
               "The server did not return dashboard data. " +
-              "Check the Web app URL and that it is deployed for Anyone."
+              "Requested: " + url.replace(/key=[^&]*/, "key=***") +
+              " | Received: " +
+              String(text).replace(/\s+/g, " ").slice(0, 150)
             );
           }
 
