@@ -821,7 +821,7 @@
             </div>
           </div>
           <div class="vision-campaign-note" id="visionCampaignNote">
-            Counts are calculated from Vision Seminar records in the Learning Hub data.
+            Counts are calculated from both Vision Seminar versions in the Learning Hub data.
           </div>
         </div>
       </section>
@@ -1054,11 +1054,15 @@
 
     function renderVisionCampaign() {
       const records = dashboardData.records || [];
+
+      // Match both "Vision Seminar (English Version)" and
+      // "Vision Seminar (Taglish Version)", including future title suffixes.
       const matches = records.filter(function(r) {
-        return String(r.course || "").trim().toLowerCase() === "vision seminar";
+        return /^vision\s+seminar\b/i.test(String(r.course || "").trim());
       });
 
-      // Deduplicate learner records. Use learner ID first, then email, then name.
+      // Count each person once across both versions. A completed record
+      // in either version means that person has completed the campaign course.
       const uniqueLearners = {};
       matches.forEach(function(r) {
         const learnerId = String(r.learnerId || "").trim().toLowerCase();
@@ -1073,13 +1077,20 @@
           r.progress === "" || !Number.isFinite(numericProgress) ? 0 : numericProgress;
 
         if (!uniqueLearners[key]) {
-          uniqueLearners[key] = { completed: false, inProgress: false, started: false, progress: 0 };
+          uniqueLearners[key] = {
+            completed: false,
+            inProgress: false,
+            started: false,
+            progress: 0
+          };
         }
 
         const learner = uniqueLearners[key];
         if (status === "Completed") learner.completed = true;
         if (status === "In Progress") learner.inProgress = true;
-        if (status === "In Progress" || status === "Completed" || progress > 0) learner.started = true;
+        if (status === "In Progress" || status === "Completed" || progress > 0) {
+          learner.started = true;
+        }
         learner.progress = Math.max(learner.progress, progress);
       });
 
@@ -1103,9 +1114,9 @@
 
       const note = document.getElementById("visionCampaignNote");
       if (matches.length === 0) {
-        note.textContent = 'No records matched the exact course name "Vision Seminar". If this remains at zero, check the course title in the spreadsheet data.';
+        note.textContent = 'No Vision Seminar version records were found in the dashboard data. Check whether the API records include the two course titles shown below.';
       } else {
-        note.textContent = "Based on distinct learners in Vision Seminar records. Refresh the Learning Hub to load the latest data. Only learners marked Completed count toward the goal.";
+        note.textContent = "Counts both English and Taglish versions. Each learner is counted once, even if they completed both. Only a Completed status in either version counts toward the goal.";
       }
     }
 
