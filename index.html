@@ -140,6 +140,116 @@
       padding: 18px;
     }
 
+
+    /* Vision Seminar campaign progress */
+    .vision-campaign {
+      background: #fff;
+      border: 1px solid #dfe5df;
+      border-radius: 14px;
+      margin-bottom: 22px;
+      overflow: hidden;
+      box-shadow: 0 2px 7px rgba(0,0,0,.04);
+    }
+    .vision-campaign-hero {
+      background: #365233;
+      color: #fff;
+      padding: 22px 24px;
+    }
+    .vision-campaign-kicker {
+      font-size: 12px;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      opacity: .88;
+      margin-bottom: 7px;
+    }
+    .vision-campaign-title {
+      font-size: 24px;
+      font-weight: 700;
+      line-height: 1.25;
+      margin: 0 0 7px;
+    }
+    .vision-campaign-subtitle {
+      font-size: 14px;
+      line-height: 1.5;
+      opacity: .94;
+      margin: 0;
+    }
+    .vision-campaign-body { padding: 22px 24px; }
+    .vision-campaign-summary {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .vision-campaign-count {
+      color: #365233;
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1.15;
+    }
+    .vision-campaign-count small {
+      color: #6d756e;
+      font-size: 15px;
+      font-weight: 600;
+    }
+    .vision-campaign-percent {
+      color: #365233;
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .vision-campaign-track {
+      height: 11px;
+      background: #e6ebe6;
+      border-radius: 999px;
+      overflow: hidden;
+      margin: 15px 0 19px;
+    }
+    .vision-campaign-fill {
+      height: 100%;
+      width: 0;
+      background: #64865e;
+      border-radius: 999px;
+      transition: width .25s ease;
+    }
+    .vision-campaign-stats {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 12px;
+    }
+    .vision-campaign-stat {
+      min-width: 0;
+      background: #f6f8f5;
+      border-radius: 10px;
+      padding: 14px;
+    }
+    .vision-campaign-stat strong {
+      display: block;
+      color: #365233;
+      font-size: 23px;
+      margin-bottom: 4px;
+    }
+    .vision-campaign-stat span {
+      display: block;
+      color: #6d756e;
+      font-size: 12px;
+      line-height: 1.45;
+    }
+    .vision-campaign-note {
+      color: #6d756e;
+      font-size: 12px;
+      line-height: 1.5;
+      margin-top: 14px;
+    }
+    @media (max-width: 640px) {
+      .vision-campaign-hero,
+      .vision-campaign-body { padding: 17px; }
+      .vision-campaign-title { font-size: 21px; }
+      .vision-campaign-stats { grid-template-columns: 1fr; }
+      .vision-campaign-stat { padding: 12px; }
+      .vision-campaign-count { font-size: 31px; }
+    }
+
     .course-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -677,6 +787,45 @@
 
       </section>
 
+      <section class="vision-campaign" aria-labelledby="visionCampaignTitle">
+        <div class="vision-campaign-hero">
+          <div class="vision-campaign-kicker">RLCC Vision Seminar Campaign · Through December 31, 2026</div>
+          <h2 id="visionCampaignTitle" class="vision-campaign-title">Your Next Step at RLCC</h2>
+          <p class="vision-campaign-subtitle">Discover our vision. Find your place. Grow in Christ.</p>
+        </div>
+        <div class="vision-campaign-body">
+          <div class="vision-campaign-summary">
+            <div class="vision-campaign-count">
+              <span id="visionCompleted">0</span>
+              <small>/ 100 people completed</small>
+            </div>
+            <div class="vision-campaign-percent" id="visionPercent">0% of goal</div>
+          </div>
+          <div class="vision-campaign-track" id="visionProgressTrack" role="progressbar"
+               aria-label="Vision Seminar campaign progress" aria-valuemin="0"
+               aria-valuemax="100" aria-valuenow="0">
+            <div class="vision-campaign-fill" id="visionProgressFill"></div>
+          </div>
+          <div class="vision-campaign-stats">
+            <div class="vision-campaign-stat">
+              <strong id="visionInProgress">0</strong>
+              <span>People currently in progress</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="visionRemaining">100</strong>
+              <span>More completions needed to reach the goal</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="visionStarted">0</strong>
+              <span>Distinct people who have started or completed</span>
+            </div>
+          </div>
+          <div class="vision-campaign-note" id="visionCampaignNote">
+            Counts are calculated from Vision Seminar records in the Learning Hub data.
+          </div>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-head">Course Participation</div>
         <div class="panel-body">
@@ -873,6 +1022,7 @@
       renderCourses();
       renderLearners();
       renderMetrics();
+      renderVisionCampaign();
 
       if (dashboardData.generatedAt) {
 
@@ -899,6 +1049,64 @@
           return !community ||
             String(r.community || "Unassigned") === community;
         });
+    }
+
+
+    function renderVisionCampaign() {
+      const records = dashboardData.records || [];
+      const matches = records.filter(function(r) {
+        return String(r.course || "").trim().toLowerCase() === "vision seminar";
+      });
+
+      // Deduplicate learner records. Use learner ID first, then email, then name.
+      const uniqueLearners = {};
+      matches.forEach(function(r) {
+        const learnerId = String(r.learnerId || "").trim().toLowerCase();
+        const email = String(r.email || "").trim().toLowerCase();
+        const name = String(r.learnerName || r.name || "").trim().toLowerCase();
+        const key = learnerId || email || name;
+        if (!key) return;
+
+        const status = getEffectiveStatus(r);
+        const numericProgress = Number(r.progress);
+        const progress = r.progress === null || r.progress === undefined ||
+          r.progress === "" || !Number.isFinite(numericProgress) ? 0 : numericProgress;
+
+        if (!uniqueLearners[key]) {
+          uniqueLearners[key] = { completed: false, inProgress: false, started: false, progress: 0 };
+        }
+
+        const learner = uniqueLearners[key];
+        if (status === "Completed") learner.completed = true;
+        if (status === "In Progress") learner.inProgress = true;
+        if (status === "In Progress" || status === "Completed" || progress > 0) learner.started = true;
+        learner.progress = Math.max(learner.progress, progress);
+      });
+
+      const learners = Object.values(uniqueLearners);
+      const completed = learners.filter(function(x) { return x.completed; }).length;
+      const inProgress = learners.filter(function(x) {
+        return !x.completed && x.inProgress;
+      }).length;
+      const started = learners.filter(function(x) { return x.started; }).length;
+      const goal = 100;
+      const percent = Math.min(100, Math.round(completed / goal * 100));
+      const remaining = Math.max(0, goal - completed);
+
+      document.getElementById("visionCompleted").textContent = completed;
+      document.getElementById("visionPercent").textContent = percent + "% of goal";
+      document.getElementById("visionInProgress").textContent = inProgress;
+      document.getElementById("visionRemaining").textContent = remaining;
+      document.getElementById("visionStarted").textContent = started;
+      document.getElementById("visionProgressFill").style.width = percent + "%";
+      document.getElementById("visionProgressTrack").setAttribute("aria-valuenow", String(percent));
+
+      const note = document.getElementById("visionCampaignNote");
+      if (matches.length === 0) {
+        note.textContent = 'No records matched the exact course name "Vision Seminar". If this remains at zero, check the course title in the spreadsheet data.';
+      } else {
+        note.textContent = "Based on distinct learners in Vision Seminar records. Refresh the Learning Hub to load the latest data. Only learners marked Completed count toward the goal.";
+      }
     }
 
     function renderMetrics() {
