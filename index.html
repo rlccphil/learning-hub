@@ -865,6 +865,57 @@
         </div>
       </section>
 
+      <section class="vision-campaign fof-highlight" aria-labelledby="fofTitle">
+        <div class="vision-campaign-hero">
+          <div class="vision-campaign-kicker">Course Collection · Learning Hub</div>
+          <h2 id="fofTitle" class="vision-campaign-title">Foundations of Faith</h2>
+          <p class="vision-campaign-subtitle">A summary of all Foundations of Faith courses combined.</p>
+        </div>
+        <div class="vision-campaign-body">
+          <div class="vision-campaign-summary">
+            <div class="vision-campaign-count">
+              <span id="fofCompleted">0</span>
+              <small>course completions</small>
+            </div>
+            <div class="vision-campaign-percent" id="fofPercent">0% completion rate</div>
+          </div>
+          <div class="vision-campaign-track" id="fofProgressTrack" role="progressbar"
+               aria-label="Foundations of Faith completion rate" aria-valuemin="0"
+               aria-valuemax="100" aria-valuenow="0">
+            <div class="vision-campaign-fill" id="fofProgressFill"></div>
+          </div>
+          <div class="vision-campaign-stats">
+            <div class="vision-campaign-stat">
+              <strong id="fofCourses">0</strong>
+              <span>Foundations of Faith courses</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="fofLearners">0</strong>
+              <span>Distinct people enrolled across all courses</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="fofEnrollments">0</strong>
+              <span>Total course enrollments</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="fofInProgress">0</strong>
+              <span>Enrollments currently in progress</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="fofPeopleCompleted">0</strong>
+              <span>Distinct people who completed at least one course</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="fofAvg">0%</strong>
+              <span>Average progress across enrollments</span>
+            </div>
+          </div>
+          <div class="vision-campaign-note" id="fofNote">
+            Totals are calculated from all Foundations of Faith courses in the Learning Hub data.
+          </div>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-head">Course Participation</div>
         <div class="panel-body">
@@ -1063,6 +1114,7 @@
       renderMetrics();
       renderVisionCampaign();
       renderRealLifeBibleStudy();
+      renderFoundationsOfFaith();
 
       if (dashboardData.generatedAt) {
 
@@ -1224,6 +1276,69 @@
         note.textContent = 'No "Real Life Bible Study" records were found in the dashboard data. Check that the course title in the Learning Hub starts with "Real Life Bible Study".';
       } else {
         note.textContent = "Each learner is counted once. Completion rate is the share of enrolled learners with a Completed status.";
+      }
+    }
+
+    function renderFoundationsOfFaith() {
+      const records = dashboardData.records || [];
+
+      // A record belongs to Foundations of Faith if its collection or its
+      // course title mentions "Foundations of Faith".
+      const re = /foundations\s+of\s+faith/i;
+      const matches = records.filter(function(r) {
+        return re.test(String(r.collection || "")) || re.test(String(r.course || ""));
+      });
+
+      const courseNames = {};
+      const people = {};
+      const peopleCompleted = {};
+      let enrollments = 0, completed = 0, inProgress = 0, progressSum = 0;
+
+      matches.forEach(function(r) {
+        const courseName = String(r.course || "").trim().toLowerCase();
+        if (courseName) courseNames[courseName] = true;
+
+        const learnerId = String(r.learnerId || "").trim().toLowerCase();
+        const email = String(r.email || "").trim().toLowerCase();
+        const name = String(r.learnerName || r.name || "").trim().toLowerCase();
+        const key = learnerId || email || name;
+
+        const status = getEffectiveStatus(r);
+        const n = Number(r.progress);
+        const progress = r.progress === null || r.progress === undefined ||
+          r.progress === "" || !Number.isFinite(n) ? 0 : n;
+
+        enrollments++;
+        if (status === "Completed") {
+          completed++;
+          progressSum += 100;
+          if (key) peopleCompleted[key] = true;
+        } else {
+          if (status === "In Progress") inProgress++;
+          progressSum += progress;
+        }
+        if (key) people[key] = true;
+      });
+
+      const rate = enrollments ? Math.round(completed / enrollments * 100) : 0;
+      const avg = enrollments ? Math.min(100, Math.round(progressSum / enrollments)) : 0;
+
+      document.getElementById("fofCompleted").textContent = completed;
+      document.getElementById("fofPercent").textContent = rate + "% completion rate";
+      document.getElementById("fofCourses").textContent = Object.keys(courseNames).length;
+      document.getElementById("fofLearners").textContent = Object.keys(people).length;
+      document.getElementById("fofEnrollments").textContent = enrollments;
+      document.getElementById("fofInProgress").textContent = inProgress;
+      document.getElementById("fofPeopleCompleted").textContent = Object.keys(peopleCompleted).length;
+      document.getElementById("fofAvg").textContent = avg + "%";
+      document.getElementById("fofProgressFill").style.width = rate + "%";
+      document.getElementById("fofProgressTrack").setAttribute("aria-valuenow", String(rate));
+
+      const note = document.getElementById("fofNote");
+      if (matches.length === 0) {
+        note.textContent = 'No Foundations of Faith records were found in the dashboard data. Check that the collection or course titles include "Foundations of Faith".';
+      } else {
+        note.textContent = "Combines every course in the Foundations of Faith collection. Completion rate is completed enrollments out of total enrollments.";
       }
     }
 
