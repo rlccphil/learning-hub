@@ -826,6 +826,45 @@
         </div>
       </section>
 
+      <section class="vision-campaign rlbs-highlight" aria-labelledby="rlbsTitle">
+        <div class="vision-campaign-hero">
+          <div class="vision-campaign-kicker">Bible Engagement · Learning Hub</div>
+          <h2 id="rlbsTitle" class="vision-campaign-title">Real Life Bible Study</h2>
+          <p class="vision-campaign-subtitle">Open the Word. Walk it out. Grow together in Christ.</p>
+        </div>
+        <div class="vision-campaign-body">
+          <div class="vision-campaign-summary">
+            <div class="vision-campaign-count">
+              <span id="rlbsCompleted">0</span>
+              <small>people completed</small>
+            </div>
+            <div class="vision-campaign-percent" id="rlbsPercent">0% completion rate</div>
+          </div>
+          <div class="vision-campaign-track" id="rlbsProgressTrack" role="progressbar"
+               aria-label="Real Life Bible Study completion rate" aria-valuemin="0"
+               aria-valuemax="100" aria-valuenow="0">
+            <div class="vision-campaign-fill" id="rlbsProgressFill"></div>
+          </div>
+          <div class="vision-campaign-stats">
+            <div class="vision-campaign-stat">
+              <strong id="rlbsInProgress">0</strong>
+              <span>People currently in progress</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="rlbsStarted">0</strong>
+              <span>Distinct people who have started or completed</span>
+            </div>
+            <div class="vision-campaign-stat">
+              <strong id="rlbsAvg">0%</strong>
+              <span>Average progress among those who started</span>
+            </div>
+          </div>
+          <div class="vision-campaign-note" id="rlbsNote">
+            Counts are calculated from the Real Life Bible Study records in the Learning Hub data.
+          </div>
+        </div>
+      </section>
+
       <section class="panel">
         <div class="panel-head">Course Participation</div>
         <div class="panel-body">
@@ -1023,6 +1062,7 @@
       renderLearners();
       renderMetrics();
       renderVisionCampaign();
+      renderRealLifeBibleStudy();
 
       if (dashboardData.generatedAt) {
 
@@ -1117,6 +1157,73 @@
         note.textContent = 'No Vision Seminar version records were found in the dashboard data. Check whether the API records include the two course titles shown below.';
       } else {
         note.textContent = "Counts both English and Taglish versions. Each learner is counted once, even if they completed both. Only a Completed status in either version counts toward the goal.";
+      }
+    }
+
+    function renderRealLifeBibleStudy() {
+      const records = dashboardData.records || [];
+
+      // Matches "Real Life Bible Study" including any version/title suffixes.
+      const matches = records.filter(function(r) {
+        return /^real\s+life\s+bible\s+study\b/i.test(String(r.course || "").trim());
+      });
+
+      // Count each person once across all matching records.
+      const uniqueLearners = {};
+      matches.forEach(function(r) {
+        const learnerId = String(r.learnerId || "").trim().toLowerCase();
+        const email = String(r.email || "").trim().toLowerCase();
+        const name = String(r.learnerName || r.name || "").trim().toLowerCase();
+        const key = learnerId || email || name;
+        if (!key) return;
+
+        const status = getEffectiveStatus(r);
+        const numericProgress = Number(r.progress);
+        const progress = r.progress === null || r.progress === undefined ||
+          r.progress === "" || !Number.isFinite(numericProgress) ? 0 : numericProgress;
+
+        if (!uniqueLearners[key]) {
+          uniqueLearners[key] = { completed: false, inProgress: false, started: false, progress: 0 };
+        }
+
+        const learner = uniqueLearners[key];
+        if (status === "Completed") learner.completed = true;
+        if (status === "In Progress") learner.inProgress = true;
+        if (status === "In Progress" || status === "Completed" || progress > 0) {
+          learner.started = true;
+        }
+        learner.progress = Math.max(learner.progress, progress);
+      });
+
+      const learners = Object.values(uniqueLearners);
+      const completed = learners.filter(function(x) { return x.completed; }).length;
+      const inProgress = learners.filter(function(x) { return !x.completed && x.inProgress; }).length;
+      const startedList = learners.filter(function(x) { return x.started; });
+      const started = startedList.length;
+      const rate = learners.length ? Math.round(completed / learners.length * 100) : 0;
+
+      // Progress is stored as 0-100 (same as the course cards).
+      let avg = 0;
+      if (started) {
+        const sum = startedList.reduce(function(t, x) {
+          return t + (x.completed ? 100 : x.progress);
+        }, 0);
+        avg = Math.min(100, Math.round(sum / started));
+      }
+
+      document.getElementById("rlbsCompleted").textContent = completed;
+      document.getElementById("rlbsPercent").textContent = rate + "% completion rate";
+      document.getElementById("rlbsInProgress").textContent = inProgress;
+      document.getElementById("rlbsStarted").textContent = started;
+      document.getElementById("rlbsAvg").textContent = avg + "%";
+      document.getElementById("rlbsProgressFill").style.width = rate + "%";
+      document.getElementById("rlbsProgressTrack").setAttribute("aria-valuenow", String(rate));
+
+      const note = document.getElementById("rlbsNote");
+      if (matches.length === 0) {
+        note.textContent = 'No "Real Life Bible Study" records were found in the dashboard data. Check that the course title in the Learning Hub starts with "Real Life Bible Study".';
+      } else {
+        note.textContent = "Each learner is counted once. Completion rate is the share of enrolled learners with a Completed status.";
       }
     }
 
