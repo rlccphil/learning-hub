@@ -1024,6 +1024,23 @@
         ' <a href="#" onclick="loadData();return false;">Try again</a>';
     }
 
+    // Nine Practices of a Disciple: learner records from its own Apps Script
+    const NP_URL = "https://script.google.com/macros/s/AKfycbzO2POW1RnVeNjfE46tTrDhMtcC7SiU_oXVRb-rU2pzoWkJR89DUIzSbHl-D0vKFM92/exec";
+
+    function loadNinePractices() {
+      const key = getKey();
+      return fetch(
+        NP_URL + "?action=learners" +
+        (key ? "&key=" + encodeURIComponent(key) : ""),
+        { redirect: "follow" }
+      )
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          return d && Array.isArray(d.records) ? d.records : [];
+        })
+        .catch(function() { return []; });
+    }
+
     function loadData() {
 
       document.getElementById("loading").style.display = "block";
@@ -1072,10 +1089,15 @@
 
           dashboardData = data || dashboardData;
 
-          document.getElementById("loading").style.display = "none";
-          document.getElementById("app").style.display = "block";
-
-          renderAll();
+          return loadNinePractices().then(function(extra) {
+            if (extra.length) {
+              dashboardData.records =
+                (dashboardData.records || []).concat(extra);
+            }
+            document.getElementById("loading").style.display = "none";
+            document.getElementById("app").style.display = "block";
+            renderAll();
+          });
 
         })
         .catch(function(error) {
