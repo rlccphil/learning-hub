@@ -1090,7 +1090,10 @@
           dashboardData = data || dashboardData;
 
           return loadNinePractices().then(function(extra) {
-            if (extra.length) {
+            var npDone = (dashboardData.records || []).some(function(r) {
+              return r.course === "Nine Practices of a Disciple";
+            });
+            if (extra.length && !npDone) {
               dashboardData.records =
                 (dashboardData.records || []).concat(extra);
             }
